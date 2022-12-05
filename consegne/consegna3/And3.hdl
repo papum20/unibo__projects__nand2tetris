@@ -1,0 +1,10 @@
+//REQ.: And, (not)
+
+CHIP And3 {
+    IN a, b, c;
+    OUT out;
+
+    PARTS:
+        And(a=a, b=b, out=aANDb);
+        And(a=aANDb, b=c, out=out);
+}

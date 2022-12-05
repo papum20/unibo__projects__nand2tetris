@@ -1,0 +1,33 @@
+
+function Main.main 0
+
+	call Random.init 0
+	pop temp 0
+
+	push constant 40
+	pop static 0
+	push constant 32767
+label LOOP
+	push static 0
+	push constant 1
+	lt
+	if-goto END
+
+	push static 0
+	push constant 1
+	sub
+	pop static 0
+
+	push constant 128
+	call Random.Rand 1
+	
+	goto LOOP
+
+label END
+	push constant 32767
+
+	call Keyboard.readChar 0
+	pop temp 0
+
+	push constant 0
+return

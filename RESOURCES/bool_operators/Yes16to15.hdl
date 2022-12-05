@@ -1,0 +1,14 @@
+//REQ.: not15 (not)
+
+
+
+CHIP Yes16to15 {
+    IN in[16];
+    OUT out[15];
+
+    PARTS:
+
+    Not15(in=in[0..14], out=notOut);
+    Not15(in=notOut, out=out);
+
+}

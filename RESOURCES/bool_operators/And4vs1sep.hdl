@@ -1,0 +1,18 @@
+//REQ.: and,not
+
+/**
+ * 16-bit bitwise And:
+ * for i = 0..15: out[i] = (a[i] and b[i])
+ */
+
+CHIP And4vs1sep {
+	IN a[4], b;
+	OUT out0, out1, out2, out3;
+
+	PARTS:
+	And(a=a[0], b=b, out=out0);
+	And(a=a[1], b=b, out=out1);
+	And(a=a[2], b=b, out=out2);
+	And(a=a[3], b=b, out=out3);
+
+}

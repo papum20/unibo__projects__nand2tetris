@@ -1,0 +1,14 @@
+//REQ.: and,not
+
+//FOR WHATEVER INPUT, OUTPUT IS 0
+
+
+
+CHIP Zero {
+    IN in;
+    OUT out;
+
+    PARTS:
+        Not(in=in, out=NOTin);
+        And(a=in, b=NOTin, out=out);
+}

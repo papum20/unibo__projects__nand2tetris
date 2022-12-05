@@ -1,0 +1,37 @@
+push constant 1
+push constant 2
+push constant 3
+call tester.BasicTest 3
+
+label end
+	goto end
+
+
+function tester.BasicTest 1
+	push constant 10
+	pop local 0
+	push constant 21
+	push constant 22
+	pop argument 2
+	pop argument 1
+	push constant 36
+	pop static 4
+	push constant 42
+	push constant 45
+	pop static 7
+	pop static 1
+	push constant 510
+	pop static 0
+	push local 0
+	push static 7
+	add
+	push argument 1
+	sub
+	push static 4
+	push static 4
+	add
+	sub
+	push static 0
+	add
+
+	return

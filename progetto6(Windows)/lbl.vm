@@ -1,0 +1,21 @@
+push constant 0
+label ___2
+label ___3
+push constant 3
+eq
+push constant 2
+lt
+push constant 4
+gt
+label ___5a
+label ___5
+call lbl.f 0
+label ___8
+goto ___8
+
+
+
+function lbl.f 0
+    push constant 6
+	return
+

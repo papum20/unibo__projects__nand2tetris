@@ -1,0 +1,16 @@
+//REQ.: or16,(or,not)
+
+CHIP Or8Way16 {
+    IN a[16], b[16], c[16], d[16], e[16], f[16], g[16], h[16];
+    OUT out[16];
+
+    PARTS:
+    Or16(a=a, b=b, out=aORb);
+    Or16(a=aORb, b=c, out=bORc);
+    Or16(a=bORc, b=d, out=cORd);
+    Or16(a=cORd, b=e, out=dORe);
+    Or16(a=dORe, b=f, out=eORf);
+    Or16(a=eORf, b=g, out=fORg);
+    Or16(a=fORg, b=h, out=out);    
+
+}

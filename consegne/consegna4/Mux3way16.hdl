@@ -1,0 +1,23 @@
+//REQ.: mux16, or3way16
+
+
+/*
+exactly one sel should be 1
+*/
+
+
+
+CHIP Mux3way16 {
+    IN a[16], b[16], c[16], sel1, sel2, sel3;
+    OUT out[16];
+
+
+    PARTS:
+
+    Mux16(a=false, b=a, sel=sel1, out=outA);
+    Mux16(a=false, b=b, sel=sel2, out=outB);
+    Mux16(a=false, b=c, sel=sel3, out=outC);
+    
+    Or3way16(a=outA, b=outB, c=outC, out=out);
+
+}

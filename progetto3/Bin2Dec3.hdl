@@ -1,0 +1,27 @@
+//REQ.: And3,not,(and)
+
+CHIP Bin2Dec3 {
+    IN in[3];
+    OUT out[8];
+
+
+    PARTS:   
+
+
+    //NOT in
+    Not(in=in[0], out=notZero);
+    Not(in=in[1], out=notOne);
+    Not(in=in[2], out=notTwo);
+
+   //AND sel
+    And3(a=notZero, b=notOne, c=notTwo, out=out[0]);
+    And3(a=in[0],   b=notOne, c=notTwo, out=out[1]);
+    And3(a=notZero, b=in[1],  c=notTwo, out=out[2]);
+    And3(a=in[0],   b=in[1],  c=notTwo, out=out[3]);
+    And3(a=notZero, b=notOne, c=in[2],  out=out[4]);
+    And3(a=in[0],   b=notOne, c=in[2],  out=out[5]);
+    And3(a=notZero, b=in[1],  c=in[2],  out=out[6]);
+    And3(a=in[0],   b=in[1],  c=in[2],  out=out[7]);
+
+
+}

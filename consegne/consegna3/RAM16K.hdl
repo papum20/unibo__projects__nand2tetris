@@ -1,0 +1,48 @@
+//REQ.: and4vs1sep,bin2dec2,Mux4Way16,ram4k,(and,and3,and16,bin2dec2sep,bom2dec3sep,bin2dec3,mux,mux16,not,or8way16,ram8,ram64,ram512)
+
+// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/03/b/RAM16K.hdl
+
+/**
+ * Memory of 16K registers, each 16 bit-wide. Out holds the value
+ * stored at the memory location specified by address. If load==1, then 
+ * the in value is loaded into the memory location specified by address 
+ * (the loaded value will be emitted to out from the next time step onward).
+ */
+
+CHIP RAM16K {
+    IN in[16], load, address[14];
+    OUT out[16];
+
+    PARTS:
+        
+    //== DMUX
+    //global address := ram
+    Bin2Dec2(in=address[12..13], out=globalRam);
+    //load:
+    And4vs1sep(a=globalRam, b=load, out0=ram0, out1=ram1, out2=ram2, out3=ram3);
+
+/*
+    //Rams outputs
+    RAM4K(in=in, load=ram0, address=address[0..10], out=ramZero);
+    RAM4K(in=in, load=ram1, address=address[0..10], out=ramOne);
+    RAM4K(in=in, load=ram2, address=address[0..10], out=ramTwo);
+    RAM4K(in=in, load=ram3, address=address[0..10], out=ramThree);
+    RAM4K(in=in, load=ram4, address=address[0..10], out=ramFour);
+    RAM4K(in=in, load=ram5, address=address[0..10], out=ramFive);
+    RAM4K(in=in, load=ram6, address=address[0..10], out=ramSix);
+    RAM4K(in=in, load=ram7, address=address[0..10], out=ramSeven);
+*/
+    //BUILTIN RAM4K;
+    RAM4K(in=in, load=ram0, address=address[0..11], out=ramZero);
+    RAM4K(in=in, load=ram1, address=address[0..11], out=ramOne);
+    RAM4K(in=in, load=ram2, address=address[0..11], out=ramTwo);
+    RAM4K(in=in, load=ram3, address=address[0..11], out=ramThree);
+
+
+    //Mux between ram outputs
+    Mux4Way16(a=ramZero, b=ramOne, c=ramTwo, d=ramThree, sel=address[12..13], out=out);
+
+}

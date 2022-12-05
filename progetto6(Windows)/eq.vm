@@ -1,0 +1,26 @@
+
+push constant 0
+push constant 1
+gt
+if-goto end
+
+label a
+	push constant 2
+
+
+label end
+	goto end
+
+
+push constant 1
+neg
+push constant 2
+neg
+push constant 0
+neg
+if-goto A
+push constant 3
+goto end
+
+label A
+push constant 4

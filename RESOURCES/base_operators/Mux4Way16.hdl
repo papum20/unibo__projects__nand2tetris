@@ -1,0 +1,42 @@
+//REQ.: and16,bin2dec2sep,mux16,or4way16,(and,mux,not)
+
+// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/01/DMux8Way.hdl
+
+/**
+ * 8-way demultiplexor:
+ * {a, b, c, d, e, f, g, h} = {in, 0, 0, 0, 0, 0, 0, 0} if sel == 000
+ *                            {0, in, 0, 0, 0, 0, 0, 0} if sel == 001
+ *                            etc.
+ *                            {0, 0, 0, 0, 0, 0, 0, in} if sel == 111
+ */
+
+CHIP Mux4Way16 {
+    IN a[16], b[16], c[16], d[16],
+        sel[2];
+    OUT out[16];
+
+    PARTS:
+
+    //SEL from binary to decimal
+    Bin2Dec2sep(in=sel, out0=zero, out1=one, out2=two, out3=three);
+
+    //from SEL to SEL[8] (decimal)
+    Mux16(a=false, b=true, sel=zero,  out=selZero);
+    Mux16(a=false, b=true, sel=one,   out=selOne);
+    Mux16(a=false, b=true, sel=two,   out=selTwo);
+    Mux16(a=false, b=true, sel=three, out=selThree);
+
+    //foreach IN and SEL[4] (decimal)
+    And16(a=a, b=selZero,  out=aMux);
+    And16(a=b, b=selOne,   out=bMux);
+    And16(a=c, b=selTwo,   out=cMux);
+    And16(a=d, b=selThree, out=dMux);
+    
+
+    //OUTPUT: or foreach IN
+    Or4Way16(a=aMux, b=bMux, c=cMux, d=dMux, out=out);
+
+}

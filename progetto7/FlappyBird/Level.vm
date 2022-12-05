@@ -1,0 +1,568 @@
+//STATIC: 0=numero ostacoli presenti, 1=numero max ostacoli,
+//2=altezza min, 3=altezza max, 4=larghezza min, 5=larghezza max,
+//6=distanza verticale min, 7=distanza verticale max,
+//8=distanza orizzontale min, 9=distanza orizzontale max,
+//10=distanza orizzontale attuale, ovvero il numero di pixel da aspettare
+//prima di generare il prossimo ostacolo,
+//11=velocità scorrimento, 12=array ostacoli attuali
+
+//condizioni: hmax+dvmin+hmin+Hud.getHeight<256; vs<=lmin
+
+
+function Level.init 2
+
+//COSTANTI
+	push constant 0
+	pop static 0		//o=numero ostacoli presenti
+	push constant 3
+	pop static 1		//omax=numero max ostacoli
+	push constant 5
+	pop static 2		//hmin=altezza min
+	push constant 150
+	pop static 3		//hmax=altezza max
+	push constant 21//15
+	pop static 4		//lmin=larghezza min
+	push constant 50
+	pop static 5		//lmax=larghezza max
+	push constant 50
+	pop static 6		//dvmin=distanza verticale min
+	push constant 80
+	pop static 7		//dvmax=distanza verticale max
+	push constant 70//65
+	pop static 8		//dhmin=distanza orizzontale min
+	push constant 200//90
+	pop static 9		//dhmax=distanza orizzontale max
+	push constant 0
+	pop static 0		//dh=distanza orizzontale attuale
+	push constant 20//10
+	pop static 11		//vs-1=velocità scorrimento schermo (-1) (pixel)
+
+//INIZIALIZZA ARRAY CON CARATTERISTICHE PER OGNI OSTACOLO (fino a max ostacoli)
+//array = {x, h, l,  dv)
+//x = posizione orizzontale (primo pixel a sx)
+//h = altezza (di parte bassa)
+//l = larghezza
+//dv = distanza verticale
+	call Level.arrayInit 0
+	//static[12] = array
+
+return
+
+
+
+//// PUBLIC ////
+
+
+function Level.check 0
+//if(o==omax) salta generazione
+	push static 0
+	push static 1
+	eq
+	if-goto DH_DECREMENT
+//else controlla se puoi generare
+	//if(dh>0) dh-=vs
+	push static 10
+	push constant 0
+	gt
+	if-goto DH_DECREMENT
+//generate
+	call Level.generate 0	//return l
+	//dh
+	push static 9			//dhmax
+	push static 8			//dhmin
+	sub						//dhmax-dhmin
+	call Random.Rand 1		//Rand()%(dhmax-dhmin)
+	push static 8
+	add						//dhmin <= Rand() < dhmax
+	add						//Rand()+l
+	pop static 10			//dh=Rand()+l
+	//o
+	push static 0
+	push constant 1
+	add
+	pop static 0			//o++
+	goto END
+label DH_DECREMENT
+//dh-=vs
+	push static 10
+	push static 11
+	sub
+	pop static 10
+
+label END
+	push constant 0
+return
+
+
+
+//itera su ogni oggetto, lo cancella, lo sposta e lo ridisegna
+//local: 0=indice, 1,2,3,4=x,h,l,dv
+function Level.iterator 6
+push static 12
+pop local 0					//local[0]=indice array
+label FOR
+//if(local[0]==len(array)) end
+	push local 0			//indice
+	call Level.endOfArray 1
+	if-goto END
+	//x
+	push local 0			//address
+	call Memory.peek 1		//x
+	pop local 1				//local[1]=x
+	//l
+	push local 0
+	push constant 2
+	add						//address+2
+	call Memory.peek 1		//l
+	pop local 3				//local[3]=l
+//if(l==0 or x+l<0) continue
+	push local 3
+	push constant 0
+	eq						//l==0 (se non inizializzato)
+	push local 1
+	push local 3
+	add
+	push constant 0
+	lt						//x+l<0
+	or
+	if-goto CONTINUE
+	//h
+	push local 0
+	push constant 1
+	add						//address+1
+	call Memory.peek 1		//h
+	pop local 2				//local[2]=h
+	//dv
+	push local 0
+	push constant 3
+	add						//address+3
+	call Memory.peek 1		//dv
+	pop local 4				//local[4]=dv
+//cancella
+	push constant 0
+	push local 1
+	push local 3
+	add						//argument[1]=x+l
+	push local 2
+	push local 4
+	call Level.drawPart 4
+	pop temp 0
+//sposta
+	push local 0
+	push local 1
+	push local 3
+	call Level.move 3
+	pop local 5				//local[5]=new_x
+//disegna
+	push constant 1
+	push local 1
+	push local 2
+	push local 4
+	call Level.drawPart 4
+	pop temp 0
+//if(new_x>x(bird)+s) continue
+	push local 5
+	call Bird.getX 0
+	call Bird.getS 0
+	add
+	gt
+	if-goto CONTINUE
+	//else check collision
+	push local 5
+	push local 2
+	push local 3
+	push local 4
+	call Level.checkCollision 4
+	if-goto END
+label CONTINUE
+	push local 0
+	push constant 4
+	add
+	pop local 0			//local[0]+=4
+	goto FOR
+label END
+	push constant 0
+return
+
+
+
+
+//// SET/GET/RESET ////
+
+function Level.resetO 0
+	push constant 0
+	pop static 0
+	push constant 0
+return
+
+
+//// PRIVATE ////
+
+
+//argomento: indice array
+//ritorna 1 se è uguale a len(array) (static 12)
+function Level.endOfArray 0
+	push constant 1			//return 1
+	push argument 0			//indice
+	push static 1			//omax
+	push constant 4
+	call Math.multiply 2	//len(array)=omax*4
+	push static 12
+	add						//array[len(array)]
+	eq
+	if-goto END
+	pop temp 0
+	push constant 0			//return 0
+label END
+return
+
+
+function Level.arrayInit 2
+//crea array
+	push static 1		//o
+	push constant 4		//numero campi array
+	call Math.multiply 2
+	call Array.new 1	//array[0*4]
+	pop static 12
+//inizializza ogni x<0 così che non vengano disegnati
+	call Level.arrayReset 0
+return
+
+
+//mette ogni x=-lmax-1, così non vengono disegnati anche se l è inizializzato
+function Level.arrayReset 2
+	push static 5
+	push constant 1
+	add
+	neg
+	pop local 0			//local[0]=-1
+	push static 12
+	pop local 1			//local[1]=indirizzo array
+label FOR
+	//if(local[0]==len(array)) end
+	push local 1			//indice
+	call Level.endOfArray 1
+	if-goto END
+	//x=-lmax
+	push local 1
+	push local 0
+	call Memory.poke 2
+	pop temp 0
+	//local[1]+=4
+	push local 1
+	push constant 4
+	add
+	pop local 1
+	goto FOR
+label END
+	push constant 0
+return
+
+
+
+//disegna oggetti
+//5 argomenti: 0 colore (1=nero (disegna), 0=bianco (cancella)),
+//			   1,2,3,4: x,h,l,dv
+//function Level.draw 2
+////colore
+//	push argument 0
+//	neg						//0->0, 1->-1
+//	call Screen.setColor 1
+//	pop temp 0
+////disegna rettangolo basso
+//	push argument 1			//x
+//	push constant 0
+//	call Math.max 2
+//	pop local 0				//local[0]=x1
+//	push local 0			//x1=max(0,x)
+//	push constant 256
+//	push argument 2
+//	sub						//y1=256-h
+//	push argument 1			//x
+//	push argument 3			//l
+//	add						//x+l
+//	push constant 511
+//	call Math.min 2			
+//	pop local 1				//local[1]=x2
+//	push local 1			//x2=min(x+l,511)
+//	push constant 255		//y2=255
+//	call Screen.drawRectangle 4
+//	pop temp 0
+////disegna rettangolo alto
+//	push local 0			//x1
+//	call Hud.getHeight 0	//y1=bordo linea alta
+//	push local 1			//x2
+//	push constant 256
+//	push argument 2			//h
+//	sub
+//	push argument 4			//dv
+//	sub						//y2=256-h-dv
+//	call Screen.drawRectangle 4
+//	pop temp 0
+////END
+//	push constant 0
+//return
+
+
+
+//disegna (o cancella) solo la parte spostata
+//4 argomenti: 0 colore (1=nero, 0=bianco), 1,2,3: x2,h,dv
+function Level.drawPart 2
+//if(x2<0 or x1>511) end
+	push argument 1
+	push constant 0
+	lt						//x2<0
+	push argument 1
+	push static 11
+	sub
+	pop local 0				//local[1](x1)=x-vs
+	push local 0
+	push constant 511
+	gt						//x1>511
+	or
+	if-goto END
+//else colore
+	push argument 0
+	neg						//0->0, 1->-1
+	call Screen.setColor 1
+	pop temp 0
+//disegna rettangolo basso
+	push local 0			//x1
+	push constant 0
+	call Math.max 2
+	pop local 0				//local[0]=x1
+	push local 0			//x1=max(0,x)
+	push constant 256
+	push argument 2
+	sub						//y1=256-h
+	push argument 1			//x2
+	push constant 511
+	call Math.min 2			
+	pop local 1				//local[1]=x2
+	push local 1			//x2=min(x+vs-1,511)
+	push constant 255		//y2=255
+	call Screen.drawRectangle 4
+	pop temp 0
+//disegna rettangolo alto
+	push local 0			//x1
+	call Hud.getHeight 0	//y1=bordo linea alta
+	push local 1			//x2
+	push constant 256
+	push argument 2			//h
+	sub
+	push argument 3			//dv
+	sub						//y2=256-h-dv
+	call Screen.drawRectangle 4
+	pop temp 0
+label END
+	push constant 0
+return
+
+
+
+
+//sposta oggetti (x)
+//3 argomenti: 0=indirizzo, 1=x(attuale), 2=l
+//ritorna nuova x
+function Level.move 0
+//if(x+l<0) continue
+	push argument 1
+	push argument 2
+	add
+	push constant 0
+	lt
+	if-goto END
+//sposta
+	push argument 1
+	push static 11
+	sub
+	pop argument 1			//local[1]=new x
+	push argument 0
+	push argument 1
+	call Memory.poke 2		//save x
+	pop temp 0
+	//if(new_x+l>=0) continue
+	push argument 1
+	push argument 2
+	add
+	push constant 0
+	lt
+	not
+	if-goto END
+	//else o--...
+	push static 0
+	push constant 1
+	sub
+	pop static 0
+	//...e score++
+	call Hud.setScore 0
+	pop temp 0
+	call Main.setNewScore 0
+	pop temp 0
+label END
+	push argument 1
+return
+
+
+
+
+//ritorna l
+function Level.generate 3
+push static 12
+pop local 0				//indirizzo degli x in array
+//individua la parte dell'array libera, ovvero con x<0
+label CHECK_LOOP
+	push local 0
+	call Memory.peek 1	//array[local 0] = x(local 0)
+	push constant 0
+	lt					//if(x<0) jump
+	if-goto GENERATE
+	push local 0
+	push constant 4
+	add
+	pop local 0			//else local[0] += 4 (dimensione di un elemento in array)
+	goto CHECK_LOOP
+label GENERATE
+	//x
+	push local 0		//address 0
+	push constant 511
+	call Memory.poke 2	//x=511
+	pop temp 0
+	//h
+	push local 0
+	push constant 1
+	add					//address 1
+	push static 3		//hmax
+	push static 2		//hmin
+	sub
+	call Random.Rand 1	//Rand()%(hmax-hmin)
+	push static 2
+	add					//hmin <= Rand() < hmax
+	pop local 1
+	push local 1
+	call Memory.poke 2	//h=Rand()
+	pop temp 0
+	//l
+	push local 0
+	push constant 2
+	add					//address 2
+	push static 5		//lmax
+	push static 4		//lmin
+	sub
+	call Random.Rand 1	//Rand()%(lmax-lmin)
+	push static 4
+	add					//lmin <= Rand() < lmax
+	pop local 2			//per return
+	push local 2
+	call Memory.poke 2	//l=Rand()
+	pop temp 0
+	//dv
+	push local 0
+	push constant 3
+	add					//address 3
+	push static 7		//dvmax
+	push constant 256	//256
+	call Hud.getHeight 0
+	sub
+	push local 1		//h
+	sub
+	push static 2		//hmin
+	sub
+	call Math.min 2		//max=min(256-hudHeight-h-hmin, dvmax)	
+	push static 6		//dvmin
+	sub
+	call Random.Rand 1	//Rand()%(max-dvmin)
+	push static 6
+	add					//dvmin <= Rand() < max
+	call Memory.poke 2	//dv=Rand()
+	pop temp 0
+	
+	push local 2
+return
+
+
+
+
+//4 argomenti: 0=x1,1=h,2=l,3=dv
+//6 local: 0=x,1=y,2=s,3=(v>=0), 4=y_counter, 5=x_end (estremità destra x)
+//ritorna 1 se collisione, altrimenti 0
+function Level.checkCollision 6
+	call Bird.getX 0
+	pop local 0
+	call Bird.getY 0
+	pop local 1
+	call Bird.getS 0
+	pop local 2
+	call Bird.getDirection 0
+	pop local 3
+	push local 2
+	pop local 4
+push constant 0			//per return, in caso di non collisione
+label LOOP_Y			//itera sulle y dell'uccello
+	//if(y_counter<0) end
+	push local 4
+	push constant 0
+	lt
+	if-goto END
+	//se le y di uccello e ostacolo non coincidono
+	//if(y+y_count<256-h and y+y_count>256-h-dv) continue
+	push local 1
+	push local 4
+	add					//y+y_count
+	push constant 256
+	push argument 1
+	sub					//256-h
+	lt					//y+y_count<256-h
+	push local 1
+	push local 4
+	add					//y+y_count
+	push constant 256
+	push argument 1
+	sub					//256-h
+	push argument 3
+	sub					//256-h-dv
+	gt					//y+y_count>256-h-dv
+	and					//y+y_count<256-h and y+y_count>256-h-dv
+	if-goto CONTINUE_Y
+	//imposta x_end
+	//if(v>=0) speed_positive
+	push local 0		//usato sia in caso di v>=0 che v<0
+	push local 3
+	if-goto SPEED_POSITIVE
+label SPEED_NEGATIVE
+	push local 4
+	add					//x+y_count
+	goto CHECK_X
+label SPEED_POSITIVE
+	push local 2
+	push local 4
+	sub					//s-y_count
+	add					//x+(s-y_count)
+label CHECK_X
+	pop local 5			//local[5]=x_end
+	//se le x non coincidono
+	//if(x>x1+l or x_end<x1) continue
+	push local 0
+	push argument 0
+	push argument 2
+	add					//x1+l
+	gt					//x>x1+l
+	push local 5
+	push argument 0
+	lt					//x_end<x1
+	or					//x>x1+l or x_end<x1
+	if-goto CONTINUE_Y
+	//else collisione -> gameover
+	call Main.GameOver 0
+	pop temp 0
+	pop temp 0			//pop 0 (messo prima di LOOP_Y)
+	push constant 1		//per return
+	goto END
+label CONTINUE_Y
+	push local 4
+	push constant 1
+	sub
+	pop local 4			//y_counter--
+	goto LOOP_Y
+label END
+return

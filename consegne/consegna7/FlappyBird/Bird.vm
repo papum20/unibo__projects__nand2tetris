@@ -1,0 +1,227 @@
+
+//condizioni: v_max < 100 (per hud)
+
+function Bird.init 0
+
+//STATIC 0 = v_max : velocità massima
+	push constant 20//30
+	pop static 0
+//STATIC 1 = x : posizione sull'asse x da sinistra
+	push constant 35
+	pop static 1
+//STATIC 6 y_dflt : y di default
+	push constant 50
+	pop static 6
+//STATIC 2 = y : posizione sull'asse y dall'alto
+	push static 6
+	pop static 2
+//STATIC 3 = s : size-1 (lato (in pixel) di un quadrato) (es.s=9->lato=10)
+	push constant 9
+	pop static 3
+//STATIC 4 v : velocità attuale (verso l'alto se >0)
+	push constant 0
+	pop static 4
+//STATIC 5 g : gravità (costante da sottrarre a ogni frame a v)
+	push constant 8//16
+	pop static 5
+//STATIC 7 i : input (1->si, 0->no)
+	push constant 0
+	pop static 7
+//STATIC 8 r: ready (se input pronto, cioè se il tasto è stato lasciato, così si può fare
+//solo un salto alla volta ma non si può tenere premuto
+	push constant 1
+	pop static 8
+
+	push constant 0
+return
+
+
+
+
+function Bird.movement 1
+
+//nuova y
+	push static 2		//y
+	push static 4		//v
+	sub
+	pop local 0			//local[0] = y_new
+//controlla se fuori dai bordi:
+	push local 0
+	call Hud.getHeight 0
+	lt
+	if-goto BORDER		//if(y_new<16)
+	push local 0
+	push static 3
+	add
+	push constant 255
+	gt
+	if-goto GAME_OVER	//else if(y_new+s>255)
+	goto MOVE			//else
+//se va sopra la linea dell'hud: sbatte (non va oltre)
+label BORDER
+	call Hud.getHeight 0
+	pop static 1		//y = bordo alto
+	goto END
+//se va sotto lo schermo: game over
+label GAME_OVER
+	call Main.GameOver 0
+	pop temp 0
+	//imposta y in modo che non sia fuori dallo schermo
+	push constant 200
+	push static 3
+	sub
+	pop static 2
+	goto END
+//applica nuova y
+label MOVE
+	push local 0
+	pop static 2
+
+label END
+	push constant 0
+return
+
+
+
+
+
+//LEGGE L'INPUT E IMPOSTA LA VELOCITA' ATTUALE
+function Bird.setSpeed 0
+	push static 7		//i
+	if-goto SPACE_INPUT
+	goto NO_INPUT
+label SPACE_INPUT
+//if(!ready) apply_gravity
+	push static 8
+	push constant 0
+	eq
+	if-goto APPLY_GRAVITY
+//v=v_max
+	push static 0
+	pop static 4		//v=v_max
+//ready = false
+	push constant 0
+	pop static 8
+	goto CONTINUE
+label NO_INPUT
+//ready = true
+	push constant 1
+	pop static 8
+label APPLY_GRAVITY
+//v = max(-v_max, v-g)
+	push static 0
+	neg					//-v_max
+	push static 4
+	push static 5
+	sub					//v-g
+	call Math.max 2
+	pop static 4
+label CONTINUE
+	push constant 0
+	pop static 7		//i=0
+	push constant 0
+return
+
+
+
+//disegna l'uccello, verso l'alto se v>=0, altrimenti verso il basso
+//punti estremità delle linee:
+//punto1:alto-sx, punto2:alto/basso-dx, punto3:basso-sx
+//argomento: colore (1 nero, 0 bianco (cancella))
+function Bird.draw 2
+//colore
+	push argument 0
+	neg						//0->0, 1->-1
+	call Screen.setColor 1
+	pop temp 0
+//mette x2 in local[0]
+	push static 1			//x (=x1=x3)
+	push static 3			//s
+	add						//x2 = x+s
+	pop local 0
+//controlla se sta salendo (v>0) o scendendo (per y2)
+//mette y2 in local[1]
+	push static 4			//v
+	push constant 0
+	lt
+	if-goto GOING_DOWN	//if(v<0)
+label GOING_UP
+	push static 2			//y
+	pop local 1
+	goto DRAW
+label GOING_DOWN
+	push static 2			//y
+	push static 3			//s
+	add
+	pop local 1
+//disegna
+label DRAW
+//linea alta
+	push static 1			//x1 = x
+	push static 2			//y1 = y
+	push local 0			//x2 = temp[1]
+	push local 1			//y2 = temp[2]
+	call Screen.drawLine 4
+	pop temp 0
+//linea bassa
+	push local 0			//x2 = temp[1]
+	push local 1			//y2 = temp[2]
+	push static 1			//x3 = x
+	push static 2
+	push static 3
+	add						//y3 = y+s
+	call Screen.drawLine 4
+
+return
+
+
+
+
+function Bird.erase 0
+
+return
+
+
+
+
+//// SET/GET/RESET ////
+
+function Bird.getVMax 0
+	push static 0
+return
+
+function Bird.getSpeed 0
+	push static 4
+return
+
+function Bird.getX 0
+	push static 1
+return
+
+function Bird.getY 0
+	push static 2
+return
+
+function Bird.getS 0
+	push static 3
+return
+
+function Bird.getDirection 0
+	push static 4
+	push constant 0
+	lt
+	not				//v>=0
+return
+
+function Bird.setInput 0
+	push constant 1
+	pop static 7
+return
+
+function Bird.reset 0
+	push constant 0
+	pop static 4	//v=0
+	push static 6
+	pop static 2	//y=y_dflt
+	push constant 0
+return

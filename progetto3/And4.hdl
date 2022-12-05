@@ -1,0 +1,11 @@
+//REQ.: And, (not)
+
+CHIP And4 {
+    IN a, b, c, d;
+    OUT out;
+
+    PARTS:
+        And(a=a, b=b, out=aANDb);
+        And(a=aANDb, b=c, out=abANDc);
+        And(a=abANDc, b=d, out=out);
+}

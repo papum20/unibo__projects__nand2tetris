@@ -1,0 +1,421 @@
+traduzioni da vm a asm:
+
+
+
+/*
+C:
+*/
+
+
+/*
+	tmp variables:
+	R13: return address for eq,gt,lt
+	R14: current instruction and return address for functions
+	R15: address to save lcl/arg (for pop_lcl_arg)
+*/
+
+
+
+
+
+
+def current_instruction_add(int x):
+	@x+4							//+4 per istruzioni di questa stessa funzione
+	D=A
+	@R14
+	M=D+M
+
+def current_instruction_set(bool incr):
+	D=A
+	if(incr) {
+		@5							//+4 per istruzioni di questa stessa funzione
+		D=D+A }
+	@R14
+	M=D
+
+
+//NON MODIFICANO D
+
+def SP_inc():		//SP += 1
+	@0
+	M=M+1
+def SP_dec():		//SP -= 1
+	@0
+	M=M-1
+
+
+
+def lcl_arg_value(int segment_start, int x):				(Postcondition: D=segment x value)
+	@segment_start
+	D=M
+	@x
+	D=D+A			//D = address of static[x]
+	A=D				//@static[x]
+	D=M				//D = static[x]
+
+def static_value(string file_name, int x):					(Postcondition: D=segment x value)
+	@file_name.x
+	D=M				//D = static[x]
+
+def push():													(Precondition: D impostato)
+	@0				//@SP
+	A=M				//@top(stack)+1
+	M=D				//push val in M (SP)
+	SP_inc()
+
+def set_address(int segment_start, int x):					(Postcondition: R15 = indirizzo dove salvare D)
+	@segment_start
+	A=M
+	D=A
+	@x
+	D=D+A		//D = static x
+	@R15
+	M=D			//save address static x
+
+def top():									(Postcondition: D=top(stack), stack length --)
+	SP_dec()
+	@SP			//@SP
+	A=M			//@top(stack)
+	D=M			//D=top(stack)
+
+def pop_lcl_arg():							(Precondition: D impostato, R15=indirizzo dove salvare D)
+	top()			//D=top(stack)
+	@R15
+	A=M				//salva valore
+	M=D
+
+def pop_static(string file_name, int x):	(Precondition: D impostato, R15=indirizzo dove salvare D)
+	top()			//D=top(stack)
+	@file_name.x
+	M=D
+
+
+
+def compare():								(Postcondition: D = penultimo - ultimo in stack)
+		//top1
+		top()
+
+		//top2
+		SP_dec()
+		@SP
+		A=M			//@top(stack)
+		D=M-D		//comparison
+
+
+
+def reset_segment(string segment):
+	@R14
+	AM=M-1
+	D=M
+	@segment
+	M=D
+
+
+
+def push_segment_value(string segment):
+	@segment
+	D=M
+	push(D)
+
+
+
+
+def set_R13(int n):						(Precondition: R14 = return_address (for eq,gt,lt); Postcondition: R13 = return_address)
+	@R14
+	D=M
+	@6+n
+	D=D+A
+	@R13
+	M=D
+
+//DA METTERE ALL'INIZIO
+def init_compare():						(Precondition: R14 = return_address)
+
+	//SKIP THESE LABELS
+	goto SCRIPT_START
+
+	label EQ_LABEL
+
+	compare()
+
+	@RETURN_TRUE
+	D;JEQ
+	@RETURN_FALSE
+	0;JMP
+
+
+	label GT_LABEL
+
+	compare()
+
+	@RETURN_TRUE
+	D;JGT
+	@RETURN_FALSE
+	0;JMP
+
+
+	label LT_LABEL
+
+	compare()
+
+	@RETURN_TRUE
+	D;JLT
+	@RETURN_FALSE
+	0;JMP
+
+
+	label RETURN_TRUE
+	push constant 0
+	not
+	
+	//goto
+	@R13
+	current_instruction_set(false)
+	@R13
+	A=M
+	0;JMP
+
+
+	label RETURN_FALSE
+	push constant 0
+
+	//goto
+	@R13
+	current_instruction_set(false)
+	@R13
+	A=M
+	0;JMP
+
+	//SKIP END
+	label SCRIPT_START
+
+
+
+
+constant x:
+    push:
+        @x
+        D=A			//D = constant x
+        push(D)
+		current_instruction_add(7)
+
+static x:
+	push:
+		static_value(file_name, x)
+		push()
+		current_instruction_add(7)
+	pop:
+		pop_static(file_name, x)
+		current_instruction_add(7)
+
+local x:
+	push:
+		lcl_arg_value(LCL, x)
+		push()
+		current_instruction_add(11)
+	pop:
+		set_address(1, x)			//set local address
+		pop_lcl_arg()				//D=top(stack); save D in local
+		current_instruction_add(15)
+
+
+argument x:
+	push:
+		lcl_arg_value(ARG, x)
+		push()
+		current_instruction_add(11)
+	pop:
+		set_address(2, x)			//set local address
+		pop_lcl_arg()				//D=top(stack); save D in local
+		current_instruction_add(15)
+
+
+
+
+add:
+	top()		//D=top(stack)	
+	SP_dec()
+	@0			//@SP
+	A=M			//@top(stack)	
+	D=D+M		//ADD
+
+	push()
+
+	current_instruction_add(15)
+
+sub:
+	top()		//D=top(stack)	
+	SP_dec()
+	@0			//@SP
+	A=M			//@top(stack)	
+	D=M-D		//ADD
+
+	push()
+	
+	current_instruction_add(15)
+
+neg:
+	SP_dec()
+	@0			//@SP
+	A=M			//@top(stack)
+	M=-M		//neg
+	SP_inc()
+	
+	current_instruction_add(7)
+
+
+
+label x:
+	(x)
+	current_instruction_set(true)
+
+goto x:
+	@x
+	current_instruction_set(false)
+
+	@x
+	0;JMP
+
+if-goto x:
+	caso base:
+		//jump se != 0
+		top()
+		@x
+		D;JGT
+		D;JLT
+
+	casi con espressioni booleane (legge 2 righe):
+	lt if-goto x:
+		compare()
+
+		@x
+		D;JLT
+
+	gt if-goto x:
+		compare()
+
+		@x
+		D;JGT
+
+	eq if-goto x:
+		compare()
+
+		@x
+		D;JEQ
+
+
+
+function f.n x:
+	label f.n
+	for i in range(x): push constant 0
+
+	//label già setta current instruction,
+	//push constant già incrementa current instruction
+
+call f.n x:
+	//ARG = SP - x
+	@x
+	D=A
+	@SP
+	D=M-D
+	@ARG
+	M=D
+
+	//push return_address
+	current_instruction_add(50)		//6 + 6 + 7*4 + 4 + 6
+	D=M
+	push(D)
+	//push LCL
+	push_segment_value("LCL")
+	//push ARG
+	push_segment_value("ARG")
+	//push THIS
+	push_segment_value("THIS")
+	//push THAT
+	push_segment_value("THAT")
+
+	//LCL = SP
+	@SP
+	D=M
+	@LCL
+	M=D
+
+	goto f.n
+
+	label return_address
+
+return:
+	//*ARG = pop()
+	pop argument 0
+	
+	//SP = ARG + 1
+	@ARG
+	D=A
+	@SP
+	M=D
+
+	//FRAME = tmp LCL
+	@LCL
+	D=M
+	@R14
+	M=D
+
+	//THAT = --FRAME
+	reset_segment(THAT)
+	//THIS = --FRAME
+	reset_segment(THIS)
+	//ARG = --FRAME
+	reset_segment(ARG)
+	//LCL = --FRAME
+	reset_segment(LCL)
+	//goto return_address = --FRAME
+	@R14
+	AMD=M-1
+	0;JMP
+
+
+
+
+
+
+eq:
+	//set R13 as return address
+	set_R13(6)
+	goto EQ_LABEL
+gt:
+	//set R13 as return address
+	set_R13(6)
+	goto GT_LABEL
+lt:
+	//set R13 as return address
+	set_R13(6)
+	goto LT_LABEL
+
+
+and:
+	top()
+
+	SP_dec()
+	@0			//@SP
+	A=M			//@top(stack)	
+	D=D&M		//AND
+
+	push()
+
+	current_instruction_add(15)
+or:
+	top()
+
+	SP_dec()
+	@0			//@SP
+	A=M			//@top(stack)	
+	D=D|M		//AND
+
+	push()
+
+	current_instruction_add(15)
+not:
+	@0			//@SP
+	A=M-1		//@top(stack)
+	M=!M		//top = !top
+	current_instruction_add(3)

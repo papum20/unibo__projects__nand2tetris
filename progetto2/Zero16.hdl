@@ -1,0 +1,30 @@
+//REQ.: one,not
+
+//FOR WHATEVER INPUT, OUTPUT IS A SEQUENCE OF 16 0s
+
+
+CHIP Zero16 {
+    IN in;
+    OUT out[16];
+
+    PARTS:
+        One(in=in, out=one);
+
+        Not(in=one, out=out[0]);
+        Not(in=one, out=out[1]);
+        Not(in=one, out=out[2]);
+        Not(in=one, out=out[3]);
+        Not(in=one, out=out[4]);
+        Not(in=one, out=out[5]);
+        Not(in=one, out=out[6]);
+        Not(in=one, out=out[7]);
+        Not(in=one, out=out[8]);
+        Not(in=one, out=out[9]);
+        Not(in=one, out=out[10]);
+        Not(in=one, out=out[11]);
+        Not(in=one, out=out[12]);
+        Not(in=one, out=out[13]);
+        Not(in=one, out=out[14]);
+        Not(in=one, out=out[15]);
+        
+}

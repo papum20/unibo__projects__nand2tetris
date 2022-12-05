@@ -1,0 +1,62 @@
+//REQ.: and3,and16,mux16,not,or8way16,(and,mux)
+
+// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/01/DMux8Way.hdl
+
+/**
+ * 8-way demultiplexor:
+ * {a, b, c, d, e, f, g, h} = {in, 0, 0, 0, 0, 0, 0, 0} if sel == 000
+ *                            {0, in, 0, 0, 0, 0, 0, 0} if sel == 001
+ *                            etc.
+ *                            {0, 0, 0, 0, 0, 0, 0, in} if sel == 111
+ */
+
+CHIP Mux8Way16 {
+    IN a[16], b[16], c[16], d[16], e[16], f[16], g[16], h[16],
+        sel[3];
+    OUT out[16];
+
+    PARTS:
+    
+    //not sel
+	Not(in=sel[0], out=notZero);
+	Not(in=sel[1], out=notOne);
+	Not(in=sel[2], out=notTwo);
+
+    //SEL from binary to decimal
+    And3(a=notZero, b=notOne, c=notTwo, out=zero);
+    And3(a=sel[0],  b=notOne, c=notTwo, out=one);
+    And3(a=notZero, b=sel[1], c=notTwo, out=two);
+    And3(a=sel[0],  b=sel[1], c=notTwo, out=three);
+    And3(a=notZero, b=notOne, c=sel[2], out=four);
+    And3(a=sel[0],  b=notOne, c=sel[2], out=five);
+    And3(a=notZero, b=sel[1], c=sel[2], out=six);
+    And3(a=sel[0],  b=sel[1], c=sel[2], out=seven);
+
+    //from SEL to SEL[8] (decimal)
+    Mux16(a=false, b=true, sel=zero,  out=selZero);
+    Mux16(a=false, b=true, sel=one,   out=selOne);
+    Mux16(a=false, b=true, sel=two,   out=selTwo);
+    Mux16(a=false, b=true, sel=three, out=selThree);
+    Mux16(a=false, b=true, sel=four,  out=selFour);
+    Mux16(a=false, b=true, sel=five,  out=selFive);
+    Mux16(a=false, b=true, sel=six,   out=selSix);
+    Mux16(a=false, b=true, sel=seven, out=selSeven);
+
+    //foreach IN and SEL[8] (decimal)
+    And16(a=a, b=selZero,  out=aMux);
+    And16(a=b, b=selOne,   out=bMux);
+    And16(a=c, b=selTwo,   out=cMux);
+    And16(a=d, b=selThree, out=dMux);
+    And16(a=e, b=selFour,  out=eMux);
+    And16(a=f, b=selFive,  out=fMux);
+    And16(a=g, b=selSix,   out=gMux);
+    And16(a=h, b=selSeven, out=hMux);
+    
+
+    //OUTPUT: or foreach IN
+    Or8Way16(a=aMux, b=bMux, c=cMux, d=dMux, e=eMux, f=fMux, g=gMux, h=hMux, out=out);
+
+}

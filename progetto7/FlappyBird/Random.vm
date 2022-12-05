@@ -1,0 +1,70 @@
+//basato sull'algoritmo LCG (linear congruential generator):
+//i numeri random sono una serie
+//X(n+1) = (a*X(n)+c) %m
+//dove a, c, m sono costanti, X(0) è il seed, che può essere cambiato
+//per non avere sempre la stessa sequenza di numeri pseudo-casuali (come in C++),
+//0<=a<m, 0<=c<=m, 0<m, 0<=X(0)<m.
+//Il periodo, ovvero il tempo in cui si ripetono i numeri generati, è m se si scelgono
+//parametri tali che: m=potenza di 2; a-1 è divisibile per tutti i fattori primi di m,
+//ma non più del necessario ed è divisibile per 4 se m lo è, mentre c è coprimo con m.
+//Di default scelgo a=4045 (4044=4*3*337), c=1, m=2**15=32768.
+//Essendo che hack lavora con 16 bit in complemento a 2, il modulo 2**15 viene applicato in automatico
+//quando si ha un'overflow, quindi non serve definire m e basta fare X+2**15=X+(2**15-1)+1 quando X<0.
+
+
+//STATIC: 0=a, 1=c, 2=X	(attuale, quindi all'inizio X=seed)
+function Random.init 0
+
+	push constant 4045
+	pop static 0		//a
+	push constant 1
+	pop static 1		//c
+	push constant 0
+	pop static 2		//seed
+
+	push constant 0
+return
+
+
+
+//Rand prende come parametro n un numero da usare come modulo per avere numeri random
+//< n (se n<=0 non lo applica, ovvero rimane modulo 2**15).
+function Random.Rand 0
+
+//X(n+1)=a*X(n)+c
+	push static 0			//a
+	push static 2			//X
+	call Math.multiply 2	//a*X
+	push static 1			//c
+	add						//a*X+c
+	pop static 2			//X(n)=X(n+1)
+//if(X>=0) goto X%=n
+	push static 2
+	push constant 0
+	lt
+	not
+	if-goto MODULO
+//else X+=m
+	push static 2
+	push constant 32767
+	add
+	push constant 1
+	add
+	//salva X(n+1) per calcolare dopo X(n+2)	
+	pop static 2			//X(n)=X(n+1)
+label MODULO
+//X%=n
+	push static 2
+	push argument 0
+	call MyMath.modulo 2	//X%=n
+
+return
+
+
+
+//prende 1 argomento e lo imposta come Seed (X(0))
+function Random.setSeed 0
+	push argument 0
+	pop static 2
+	push constant 0
+return

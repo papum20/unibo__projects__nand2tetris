@@ -1,0 +1,54 @@
+//REQ.: and8vs1sep,bin2dec3,Mux8Way16,ram512,(and,and3,and16,bin2dec3sep,mux,mux16,not,or8way16,ram8,ram64)
+
+// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/03/b/RAM4K.hdl
+
+/**
+ * Memory of 4K registers, each 16 bit-wide. Out holds the value
+ * stored at the memory location specified by address. If load==1, then 
+ * the in value is loaded into the memory location specified by address 
+ * (the loaded value will be emitted to out from the next time step onward).
+ */
+
+CHIP RAM4K {
+    IN in[16], load, address[12];
+    OUT out[16];
+
+    PARTS:
+    
+    //== DMUX
+
+    //global address := ram
+    Bin2Dec3(in=address[9..11], out=globalRam);
+    //load:
+    And8vs1sep(a=globalRam, b=load, out0=ram0, out1=ram1, out2=ram2, out3=ram3, out4=ram4, out5=ram5, out6=ram6, out7=ram7);
+
+/*
+    //Rams outputs
+    RAM512(in=in, load=ram0, address=address[0..8], out=ramZero);
+    RAM512(in=in, load=ram1, address=address[0..8], out=ramOne);
+    RAM512(in=in, load=ram2, address=address[0..8], out=ramTwo);
+    RAM512(in=in, load=ram3, address=address[0..8], out=ramThree);
+    RAM512(in=in, load=ram4, address=address[0..8], out=ramFour);
+    RAM512(in=in, load=ram5, address=address[0..8], out=ramFive);
+    RAM512(in=in, load=ram6, address=address[0..8], out=ramSix);
+    RAM512(in=in, load=ram7, address=address[0..8], out=ramSeven);
+    */
+
+    //BUILTIN RAM512;
+    RAM512(in=in, load=ram0, address=address[0..8], out=ramZero);
+    RAM512(in=in, load=ram1, address=address[0..8], out=ramOne);
+    RAM512(in=in, load=ram2, address=address[0..8], out=ramTwo);
+    RAM512(in=in, load=ram3, address=address[0..8], out=ramThree);
+    RAM512(in=in, load=ram4, address=address[0..8], out=ramFour);
+    RAM512(in=in, load=ram5, address=address[0..8], out=ramFive);
+    RAM512(in=in, load=ram6, address=address[0..8], out=ramSix);
+    RAM512(in=in, load=ram7, address=address[0..8], out=ramSeven);
+
+
+    //Mux between ram outputs
+    Mux8Way16(a=ramZero, b=ramOne, c=ramTwo, d=ramThree, e=ramFour, f=ramFive, g=ramSix, h=ramSeven, sel=address[9..11], out=out);
+
+}

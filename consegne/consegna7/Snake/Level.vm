@@ -1,0 +1,443 @@
+//STATIC: 0=spessore linea, 1=x rettangolo, 2=y rettangolo, 3=dimensioni cella,
+//4,5=numero celle(orizzontale,verticale), 6=spessore bordo cella,
+//7=frutto presente, 8=array di bool se celle piene, 9=xf (x frutto), 10=yf
+
+
+
+function Level.init 0
+push constant 3333
+pop static 11
+
+	push constant 4
+	pop static 0				//s=spessore linea
+	push constant 159
+	pop static 1				//x rettangolo (da sx)
+	push constant 4
+	pop static 2				//y rettangolo (dall'alto)
+	push constant 16
+	pop static 3				//d=dimensioni cella
+	push constant 21
+	pop static 4				//nh=numero celle orizzontale
+	push constant 15
+	pop static 5				//nv=numero celle verticale
+	push constant 1
+	pop static 6				//sc=spessore cella
+	push constant 0
+	pop static 7				//f=frutto presente (0=false, 1=true)
+
+
+	//inizializza array contenente celle piene (dimensioni nh*nv)
+	call Level.fullArrayInit 0
+	pop temp 0
+	//disegna rettangolo-bordo per gioco
+	call Level.drawBorder 0
+
+return
+
+
+
+
+//ARGUMENT: 0=colore(0:bianco,1:nero), 1=xc, 2=yc, 3=snake(=1, oppure frutto=0)
+//LOCAL: 0=x1, 1=y1, 2=s-2*sc
+function Level.colorSquare 3
+	//set color
+	push argument 0
+	neg						//-0=0, -(1)=(-1)
+	call Screen.setColor 1
+	pop temp 0
+	//calcoli
+	push static 3
+	push static 6
+	push static 6
+	add
+	sub
+	pop local 2				//local[2]=d-2*sc
+	push static 1			//x
+	push static 0			//s
+	add
+	push argument 1
+	push static 3
+	call Math.multiply 2	//xc*d
+	add
+	pop local 0				//local[0]=x1=x+s+xc*d
+	push static 2			//y
+	push static 0			//s
+	add
+	push argument 2
+	push static 3
+	call Math.multiply 2	//xc*d
+	add
+	pop local 1				//local[1]=y1=y+s+xc*d
+//if(snake) draw_snake
+	push argument 3
+	if-goto DRAW_SNAKE
+//else DRAW_FRUIT
+	push static 3
+	push constant 2
+	call Math.divide 2
+	pop temp 1				//temp[1]=d/2
+	push local 0			//x1
+	push temp 1
+	add						//x1 = x+s+xc*d+sc+d/2
+	push local 1			//y1
+	push temp 1
+	add						//y1 = y+s+xc*d+d/2
+	push static 3
+	push constant 2
+	call Math.divide 2
+	push constant 2
+	sub						//radius = (d/2)-2
+	call Screen.drawCircle 3
+	pop temp 0
+	goto END
+label DRAW_SNAKE
+	push local 0			//x1
+	push static 6			//sc
+	add						//x1 = x+s+xc*d+sc
+	push local 1			//y1
+	push static 6			//sc
+	add						//y1 = y+s+xc*d+sc
+	push local 0
+	push local 2
+	add						//x2 = x1+(s-2*c)
+	push local 1
+	push local 2
+	add						//y2 = y1+(s-2*c)
+	call Screen.drawRectangle 4
+//aggiorna array di static 8
+	push argument 2
+	push static 4
+	call Math.multiply 2	//yc*nh
+	push argument 1
+	add						//yc*nh+xc
+	push static 8
+	add
+	push argument 0
+	call Memory.poke 2
+	pop temp 1
+label END
+push constant 0
+return
+
+
+
+//LOCAL: 0=rand(numero random, per contare nell'array), 1=counter (per iterare sull'array)
+function Level.newFruit 2
+//if(f) end
+	push static 7
+	if-goto END
+//else 
+	push constant 1
+	pop static 7			//f=true
+	push static 4
+	push static 5
+	call Math.multiply 2	//nh*nv
+	call Snake.getScore 0	//n
+	sub
+	call Random.Rand 1
+	pop local 0				//local[0] = Rand()%(nh*nv-n)
+push static 8
+pop local 1
+label FIND_SQUARE
+	//if(array[counter] pieno) counter++
+	push local 1
+	call Memory.peek 1
+	if-goto COUNTER_INCR
+	//else if(rand>0) rand--, counter++
+	push local 0
+	push constant 0
+	gt
+	if-goto RAND_DECR
+	//else end(metti frutto)
+	goto ADD_FRUIT
+label RAND_DECR
+	push local 0
+	push constant 1
+	sub
+	pop local 0				//rand--
+label COUNTER_INCR
+	push local 1
+	push constant 1
+	add
+	pop local 1				//counter++
+	goto FIND_SQUARE
+label ADD_FRUIT
+	//else metti frutto
+	push local 1
+	push static 8
+	sub
+	push static 4
+	call MyMath.modulo 2
+	pop static 9			//xf=(counter-array)%nh
+	push local 1
+	push static 8
+	sub
+	push static 4
+	call Math.divide 2
+	pop static 10			//yf=(counter-array)/nh
+	push constant 1			//colore
+	push static 9			//xf
+	push static 10			//yf
+	push constant 0			//!snake
+	call Level.colorSquare 4
+	pop temp 0
+label END
+push constant 0
+return
+
+
+//ARGUMENT: 0,1=x,y testa snake
+//RETURN: bool(1=mangiato)
+function Level.checkFruit 0
+push constant 0			//per return (false)
+//if(!f) end
+	push static 7
+	push constant 0
+	eq
+	if-goto END
+//else if(x!=xf) end
+	push argument 0
+	push static 9
+	eq
+	not
+	if-goto END
+//else if(y!=yf) end
+	push argument 1
+	push static 10
+	eq
+	not
+	if-goto END
+//else mangiato
+	push constant 0
+	pop static 7		//f=0
+	//cambia valore di return
+	pop temp 0
+	push constant 1
+label END
+return
+
+
+
+//ARGUMENT: 0,1=x,y
+//RETURN: 1=game_over, 0=no
+function Level.checkCollision 0
+//controlla bordi
+	push argument 0
+	push constant 0
+	lt
+	if-goto GAME_OVER		//if(x<0)
+	push argument 0
+	push static 4
+	lt
+	not
+	if-goto GAME_OVER		//else if(x>=nh)
+	push argument 1
+	push constant 0
+	lt
+	if-goto GAME_OVER		//if(y<0)
+	push argument 1
+	push static 5
+	lt
+	not
+	if-goto GAME_OVER		//else if(y>=nv)
+//controlla serpente
+	push argument 1
+	push static 4
+	call Math.multiply 2	//y*nh
+	push argument 0
+	add						//y*nh+x
+	push static 8
+	add
+	call Memory.peek 1
+	if-goto GAME_OVER
+	goto NO_GAME_OVER
+label GAME_OVER
+	call Main.GameOver 0
+	pop temp 0
+	push constant 1
+	goto END
+label NO_GAME_OVER
+	push constant 0
+label END
+return
+
+
+
+
+//mette 0 in tutte le celle dell'array
+//ARGUMENT: 0=array, 1=length
+//LOCAL: 0=counter
+function Level.zeroArray 1
+	push argument 1
+	push argument 0
+	add
+	push constant 1
+	sub
+	pop local 0				//counter=array + (nv*nh-1)
+label LOOP
+	//if(counter<array) end
+	push local 0
+	push argument 0
+	lt
+	if-goto END
+	//else RAM[counter]=0
+	push local 0
+	push constant 0
+	call Memory.poke 2
+	pop temp 0
+	//counter --
+	push local 0
+	push constant 1
+	sub
+	pop local 0
+	goto LOOP
+label END
+	push constant 0
+return
+
+
+
+
+//// SET/GET/RESET ////
+
+function Level.getDH 0
+	push static 4
+return
+function Level.getDV 0
+	push static 5
+return
+
+
+//LOCAL: 0=x1, 1=y1
+function Level.clearScene 2
+	push static 1		//x
+	push static 0		//s
+	add
+	push constant 1
+	add
+	pop local 0			//local[0] = x1 = x+s+1
+	push static 2
+	push static 0
+	add
+	push constant 1
+	add
+	pop local 1			//local[1] = y1 = y+s+1
+//colore
+	call Main.setColorWhite 0
+	pop temp 0
+//disegna rettangolo
+	push local 0		//x1
+	push local 1		//y1
+	push local 0
+	push static 3
+	push static 4
+	call Math.multiply 2
+	add
+	push constant 2
+	sub					//x2 = (x+s)+d*nh-1
+	push local 1
+	push static 3
+	push static 5
+	call Math.multiply 2
+	add
+	push constant 2
+	sub					//y2 = (y+s)+d*nv-1
+	call Screen.drawRectangle 4
+return
+
+
+function Level.reset 0
+	push constant 0
+	pop static 7			//f=false
+	//azzera array
+	push static 8			//array
+	push static 4
+	push static 5
+	call Math.multiply 2	//nv*nh
+	call Level.zeroArray 2
+return
+
+
+
+//// PRIVATE ////
+
+
+//LOCAL: 0=x2(x+d*nh+2*s), 1=y1(y+s+d*nv)
+function Level.drawBorder 2
+	call Main.setColorBlack 0
+	pop temp 0
+//linea alta
+	push static 1			//x1 = x
+	push static 2			//y1 = y
+	push static 0
+	push static 0
+	add						//2*s
+	push static 1			//x
+	add
+	push static 3
+	push static 4
+	call Math.multiply 2	//d*nh
+	add
+	pop local 0				//local[0] = x2
+	push local 0			//x2 = x+d*nh+2*s
+	push static 0
+	push static 2
+	add						//y2 = y+s
+	call Screen.drawRectangle 4
+	pop temp 0
+//linea bassa
+	push static 1			//x1 = x
+	push static 2
+	push static 0
+	add						//y+s
+	push static 3
+	push static 5
+	call Math.multiply 2
+	add
+	pop local 1				//local[1] = y1
+	push local 1			//y1 = y+s+d*nv
+	push local 0			//x2 = x+d*nh+2*s
+	push local 1
+	push static 0
+	add						//y2 = y+2*s+d*nv
+	call Screen.drawRectangle 4
+	pop temp 0
+//linea sx
+	push static 1			//x1 = x
+	push static 0
+	push static 2
+	add						//y1 = y+s
+	push static 1
+	push static 0
+	add						//x2 = x+s
+	push local 1			//y2 = y+s+d*nv
+	call Screen.drawRectangle 4
+	pop temp 0
+//linea dx
+	push local 0
+	push static 0
+	sub						//x1 = x+d*nh+s
+	push static 2
+	push static 0
+	add						//y1 = y+s
+	push local 0			//x2 = x+d*nh+2*s
+	push local 1			//y2 = y+s+d*nv
+	call Screen.drawRectangle 4
+return
+
+
+//LOCAL: 0=counter
+function Level.fullArrayInit 1
+//crea array
+	push static 4
+	push static 5
+	call Math.multiply 2
+	pop local 0				//counter=nv*nh
+	push local 0
+	call Array.new 1
+	pop static 8
+//metti tutte celle a 0
+	push static 8
+	push local 0
+	call Level.zeroArray 2
+return

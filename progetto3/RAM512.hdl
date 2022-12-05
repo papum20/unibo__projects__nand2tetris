@@ -1,0 +1,41 @@
+//REQ.: and8vs1sep,bin2dec3,Mux8Way16,ram64,(and,and3,and16,bin2dec3sep,mux,mux16,not,or8way16,ram8)
+
+// This file is part of the materials accompanying the book 
+// "The Elements of Computing Systems" by Nisan and Schocken, 
+// MIT Press. Book site: www.idc.ac.il/tecs
+// File name: projects/03/b/RAM512.hdl
+
+/**
+ * Memory of 512 registers, each 16 bit-wide. Out holds the value
+ * stored at the memory location specified by address. If load==1, then 
+ * the in value is loaded into the memory location specified by address 
+ * (the loaded value will be emitted to out from the next time step onward).
+ */
+
+CHIP RAM512 {
+    IN in[16], load, address[9];
+    OUT out[16];
+
+    PARTS:
+    
+    //global address := ram
+    Bin2Dec3(in=address[6..8], out=globalRam);
+
+    //load:
+    And8vs1sep(a=globalRam, b=load, out0=ram0, out1=ram1, out2=ram2, out3=ram3, out4=ram4, out5=ram5, out6=ram6, out7=ram7);
+
+    //Rams outputs
+    RAM64(in=in, load=ram0, address=address[0..5], out=ramZero);
+    RAM64(in=in, load=ram1, address=address[0..5], out=ramOne);
+    RAM64(in=in, load=ram2, address=address[0..5], out=ramTwo);
+    RAM64(in=in, load=ram3, address=address[0..5], out=ramThree);
+    RAM64(in=in, load=ram4, address=address[0..5], out=ramFour);
+    RAM64(in=in, load=ram5, address=address[0..5], out=ramFive);
+    RAM64(in=in, load=ram6, address=address[0..5], out=ramSix);
+    RAM64(in=in, load=ram7, address=address[0..5], out=ramSeven);
+    
+
+    //Mux between ram outputs
+    Mux8Way16(a=ramZero, b=ramOne, c=ramTwo, d=ramThree, e=ramFour, f=ramFive, g=ramSix, h=ramSeven, sel=address[6..8], out=out);
+
+}

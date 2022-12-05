@@ -1,0 +1,13 @@
+//REQ.: not,or
+
+//FOR WHATEVER INPUT, OUTPUT IS ONE
+
+
+CHIP One {
+    IN in;
+    OUT out;
+
+    PARTS:
+        Not(in=in, out=NOTin);
+        Or(a=NOTin, b=in, out=out);
+}

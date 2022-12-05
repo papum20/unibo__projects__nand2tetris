@@ -1,0 +1,15 @@
+//push constant 0
+//push constant 3
+//push constant 10
+//add
+//sub
+//pop static 0
+//push constant 4
+//push static 0
+//add
+//pop local 0
+//push static 0
+//pop argument 1
+
+push constant 3
+neg

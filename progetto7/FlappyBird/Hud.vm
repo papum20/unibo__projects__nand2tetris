@@ -1,0 +1,459 @@
+//STATIC: 0=SCORE:(string), 1=SPEED:(string), 2=GAME OVER(string), 3=Altezza hud sopra,
+//4=score (valore), 5=PAUSE(string), 6=R TO RESTART(string), 7=SEED:(string)
+
+function Hud.init 0
+
+	push constant 15
+	pop static 3				//altezza hud
+	push constant 0
+	pop static 4				//score
+
+	call Hud.stringsInit 0
+	pop temp 0
+	call Hud.drawScore 0
+	pop temp 0
+
+	push constant 0
+return
+
+
+
+
+
+
+//cancella tutto lo schermo tranne l'hud (sopra) con un rettangolo bianco
+function Hud.clearScene 0
+
+	call Main.setColorWhite 0
+	pop temp 0
+//disegna linea orizzontale piena sopra (rettangolo)
+	push constant 0			//x1
+	call Hud.getHeight 0	//y1
+	push constant 511		//x2
+	push constant 255		//y2
+	call Screen.drawRectangle 4
+
+return
+
+
+//disegna rettangolo e scrivi GAME OVER e R TO RESTART
+function Hud.writeGameOver 0
+//rettangolo
+	call Main.setColorBlack 0
+	pop temp 0
+	//draw
+	push constant 186			//x1
+	push constant 106			//y1
+	push constant 326			//x2
+	push constant 158			//y2
+	call Screen.drawRectangle 4
+	pop temp 0
+//scritta GAME OVER
+	//imposta cursore
+	push constant 11			//row 11
+	push constant 25			//col 25
+	call Output.moveCursor 2
+	pop temp 0
+	//stampa stringa
+	push static 2
+	call Output.printString 1
+	pop temp 0
+//scritta R TO RESTART
+	//imposta cursore
+	push constant 12			//row 12
+	push constant 25			//col 25
+	call Output.moveCursor 2
+	pop temp 0
+	//stampa stringa
+	push static 6
+	call Output.printString 1
+return
+
+
+
+function Hud.drawScore 0
+//imposta cursore
+	push constant 0				//row 0
+	push constant 6				//col 6
+	call Output.moveCursor 2
+	pop temp 0
+//stampa
+	push static 4
+	call Output.printInt 1
+	pop temp 0
+return
+
+
+function Hud.drawSpeed 1
+	call Bird.getSpeed 0
+	pop local 0
+//imposta cursore
+	push constant 0				//row 0
+	push constant 61			//col 61
+	call Output.moveCursor 2
+	pop temp 0
+//if(0<=speed<10) stampa prima 00
+	push local 0
+	push constant 0
+	lt
+	not							//0<=speed
+	push local 0
+	push constant 10
+	lt							//speed<10
+	and
+	if-goto SECOND_SPACE
+//else if(-10<speed<0 or 9<speed<=v_max) stampa prima 0
+	push local 0
+	push constant 10
+	neg
+	gt							//speed>-10
+	push local 0
+	push constant 0
+	lt							//speed<0
+	and							//-10<speed<0
+	push local 0
+	push constant 9
+	gt							//speed>9
+	push local 0
+	call Bird.getVMax 0
+	gt
+	not							//speed<=v_max
+	and							//0<speed<=v_max
+	or							//-10<speed<0 or 9<speed<=v_max
+	if-goto FIRST_SPACE
+//else
+	goto NUMBER
+label SECOND_SPACE
+	push constant 32
+	call Output.printChar 1
+	pop temp 0
+label FIRST_SPACE
+	push constant 32
+	call Output.printChar 1
+	pop temp 0
+label NUMBER
+//stampa numero
+	push local 0
+	call Output.printInt 1
+	pop temp 0
+return
+
+
+function Hud.writePause 1
+//set cursor
+push constant 0			//row
+push constant 29		//col
+call Output.moveCursor 2
+pop temp 0
+	//controlla se già in pausa
+	call Main.getState 0
+	if-goto PAUSE
+	push constant 5
+	pop local 0			//counter
+label RESUME
+	//controlla loop
+	push local 0
+	push constant 1
+	lt
+	if-goto END
+	//stampa spazio
+	push constant 32
+	call Output.printChar 1
+	pop temp 0
+	//counter--
+	push local 0
+	push constant 1
+	sub
+	pop local 0
+	goto RESUME
+label PAUSE
+	push static 5
+	call Output.printString 1
+	pop temp 0
+label END
+	push constant 0
+return
+
+
+function Hud.Seed 1
+//set cursor
+	push constant 22		//row
+	push constant 0			//col
+	call Output.moveCursor 2
+	pop temp 0
+//get int
+	push constant 500
+	call Sys.wait 1
+	pop temp 0
+	push static 7
+	call Keyboard.readInt 1
+//set seed
+	call Random.setSeed 1
+	pop temp 0
+//cancella (stampa spazi)
+	push constant 20
+	pop local 0				//counter
+	//set cursor
+	push constant 22		//row
+	push constant 0			//col
+	call Output.moveCursor 2
+	pop temp 0
+label DELETE_CHARS
+	push local 0
+	push constant 0
+	eq
+	if-goto END
+	//stampa spazio
+	push constant 32
+	call Output.printChar 1
+	pop temp 0
+	//counter--
+	push local 0
+	push constant 1
+	sub
+	pop local 0
+	goto DELETE_CHARS
+label END
+	push constant 0
+return
+
+
+/// SET/GET/RESET ////
+
+//ritorna la prima linea orizzontale di schermo utilizzabile, non usata da hud
+function Hud.getHeight 0
+	push static 3
+	push constant 1
+	add
+return
+
+//function Hud.getScore 0
+//	push static 4
+//return
+
+//1 argomento: new_score
+function Hud.setScore 0
+	push static 4
+	push constant 1
+	add
+	pop static 4
+	push constant 0
+return
+
+function Hud.resetScore 0
+//score=0
+	push constant 0
+	pop static 4
+//imposta cursore
+	push constant 0				//row 0
+	push constant 6				//col 6
+	call Output.moveCursor 2
+	pop temp 0
+//cancella 3 spazi
+	push constant 32
+	call Output.printChar 1
+	pop temp 0
+	push constant 32
+	call Output.printChar 1
+	pop temp 0
+	push constant 32
+	call Output.printChar 1
+	pop temp 0
+//imposta cursore
+	push constant 0				//row 0
+	push constant 6				//col 6
+	call Output.moveCursor 2
+	pop temp 0
+//stampa 0
+	push constant 0
+	call Output.printInt 1
+return
+
+
+//// PRIVATE ////
+
+function Hud.stringsInit 0
+//crea e salva stringhe
+	call Hud.ScoreString 0
+	pop static 0				//static[0] = string SCORE:
+	call Hud.SpeedString 0
+	pop static 1				//static[1] = string SPEED:
+	call Hud.GameOverString 0
+	pop static 2				//static[2] = string GAME OVER
+	call Hud.PauseString 0
+	pop static 5				//static[5] = string PAUSE
+	call Hud.RtoRestartString 0
+	pop static 6				//static[6] = string R TO RESTART
+	call Hud.SeedString 0
+	pop static 7				//static[7] = string SEED:
+//colore
+	call Main.setColorBlack 0
+	pop temp 0
+//disegna linea orizzontale piena sopra (rettangolo)
+	push constant 0				//x1
+	push constant 12			//y1
+	push constant 511			//x2
+	push constant 15			//y2
+	call Screen.drawRectangle 4	
+//scrive SCORE: (alto-sx)
+	//imposta cursore
+	push constant 0				//row 0
+	push constant 0				//col 0
+	call Output.moveCursor 2
+	pop temp 0
+	//stampa stringa
+	push static 0
+	call Output.printString 1
+	pop temp 0
+//scrive SPEED: (alto-dx)
+	//imposta cursore
+	push constant 0				//row 0
+	push constant 55			//col 55
+	call Output.moveCursor 2
+	pop temp 0
+	//stampa stringa
+	push static 1
+	call Output.printString 1
+	pop temp 0
+push constant 0
+return
+
+
+//// STRINGHE ////
+//funzioni che creano e ritornano puntatori a stringhe
+
+//SCORE:
+function Hud.ScoreString 0
+	push constant 6
+	call String.new 1			//new string
+	push constant 83			//S
+	call String.appendChar 2	//new char
+	push constant 67			//C
+	call String.appendChar 2
+	push constant 79			//O
+	call String.appendChar 2
+	push constant 82			//R
+	call String.appendChar 2
+	push constant 69			//E
+	call String.appendChar 2
+	push constant 58			//:
+	call String.appendChar 2
+return	//return string SCORE:
+
+//SPEED:
+function Hud.SpeedString 0
+	push constant 6
+	call String.new 1			//new string
+	push constant 83			//S
+	call String.appendChar 2
+	push constant 80			//P
+	call String.appendChar 2
+	push constant 69			//E
+	call String.appendChar 2
+	push constant 69			//E
+	call String.appendChar 2
+	push constant 68			//D
+	call String.appendChar 2
+	push constant 58			//:
+	call String.appendChar 2
+return	//return string SCORE:
+
+//GAME OVER
+function Hud.GameOverString 0
+	push constant 14
+	call String.new 1			//new string
+	push constant 32			//[space]
+	call String.appendChar 2
+	push constant 32			//[space]
+	call String.appendChar 2
+	push constant 32			//[space]
+	call String.appendChar 2
+	push constant 71			//G
+	call String.appendChar 2
+	push constant 65			//A
+	call String.appendChar 2
+	push constant 77			//M
+	call String.appendChar 2
+	push constant 69			//E
+	call String.appendChar 2
+	push constant 32			//[space]
+	call String.appendChar 2
+	push constant 79			//O
+	call String.appendChar 2
+	push constant 86			//V
+	call String.appendChar 2
+	push constant 69			//E
+	call String.appendChar 2
+	push constant 82			//R
+	call String.appendChar 2
+	push constant 32			//[space]
+	call String.appendChar 2
+	push constant 32			//[space]
+	call String.appendChar 2
+return	//return string GAME OVER
+
+//R TO RESTART
+function Hud.RtoRestartString 0
+	push constant 14
+	call String.new 1			//new string
+	push constant 32			//[space]
+	call String.appendChar 2
+	push constant 82			//R
+	call String.appendChar 2
+	push constant 32			//[space]
+	call String.appendChar 2
+	push constant 84			//T
+	call String.appendChar 2
+	push constant 79			//O
+	call String.appendChar 2
+	push constant 32			//[space]
+	call String.appendChar 2
+	push constant 82			//R
+	call String.appendChar 2
+	push constant 69			//E
+	call String.appendChar 2
+	push constant 83			//S
+	call String.appendChar 2
+	push constant 84			//T
+	call String.appendChar 2
+	push constant 65			//A
+	call String.appendChar 2
+	push constant 82			//R
+	call String.appendChar 2
+	push constant 84			//T
+	call String.appendChar 2
+	push constant 32			//[space]
+	call String.appendChar 2
+return	//return string R TO RESTART
+
+//PAUSE
+function Hud.PauseString 0
+	push constant 5
+	call String.new 1			//new string
+	push constant 80			//P
+	call String.appendChar 2
+	push constant 65			//A
+	call String.appendChar 2
+	push constant 85			//U
+	call String.appendChar 2
+	push constant 83			//S
+	call String.appendChar 2
+	push constant 69			//E
+	call String.appendChar 2
+return	//return string PAUSE
+
+//SEED:
+function Hud.SeedString 0
+	push constant 5
+	call String.new 1			//new string
+	push constant 83			//S
+	call String.appendChar 2
+	push constant 69			//E
+	call String.appendChar 2
+	push constant 69			//E
+	call String.appendChar 2
+	push constant 68			//D
+	call String.appendChar 2
+	push constant 58			//:
+	call String.appendChar 2
+return	//return string SEED:

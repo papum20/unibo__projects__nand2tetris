@@ -1,0 +1,25 @@
+//modulo(int n, int modulo) -> n%m
+function MyMath.modulo 0
+
+//if(m<=0) return
+	push argument 1
+	push constant 1
+	lt
+	if-goto END
+
+label WHILE
+	//if(n<m) return
+	push argument 0
+	push argument 1
+	lt
+	if-goto END
+	//else n-=m
+	push argument 0
+	push argument 1
+	sub
+	pop argument 0
+	goto WHILE
+	
+label END
+	push argument 0
+return

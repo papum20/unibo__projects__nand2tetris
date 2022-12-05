@@ -1,0 +1,10 @@
+//REQ.: not,or,or16way
+
+CHIP Nor16Way {
+    IN in[16];
+    OUT out;
+
+    PARTS:
+        Or16Way(in=in, out=ORin);
+        Not(in=ORin, out=out);
+}      

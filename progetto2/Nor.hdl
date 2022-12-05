@@ -1,0 +1,10 @@
+//REQ.: or,not
+
+CHIP Nor {
+    IN a, b;
+    OUT out;
+
+    PARTS:
+        Or(a=a, b=b, out=ORab);
+        Not(in=ORab, out=out);
+}

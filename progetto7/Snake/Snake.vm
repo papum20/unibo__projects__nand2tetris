@@ -1,0 +1,305 @@
+//STATIC: 0=array, 1=c(indirizzo coda), 2=t(indirizzo testa) 3=dx:direzione_x, 4=dy:direzione_y, 5=n:numero elementi,
+//6=dxc:direzione_x corrente, 7=dyc:direzione_y corrente, 8=e:mangiato(bool se mangiato nel turno precedente)
+
+function Snake.init 0
+push constant 3335
+pop static 8
+
+	push constant 1
+	pop static 3			//dx=direzione x
+	push constant 0
+	pop static 4			//dy=direzione y
+	push constant 2
+	pop static 5			//n=numero elementi
+	push constant 1
+	pop static 6			//dxc=direzione_x corrente
+	push constant 0
+	pop static 7			//dyc=direzione_y corrente
+	push constant 0
+	pop static 8			//e:mangiato
+
+	//ogni 3 elementi dell'array costituiscono una casella del serpente (x,y,next)
+	//x,y=coordinate nel sistema di caselle; next=pezzo più vicino di uno alla testa
+	call Snake.arrayInit 0
+	pop temp 0
+	call Snake.initSquares 0
+	pop temp 0
+
+	push constant 0
+return
+
+
+
+
+//LOCAL: 0=new_x, 1=new_y, 2=ayc(indirizzo ycoda), 3=e_tmp(mangiato prima), 4=t_tmp(testa precedente)
+function Snake.move 5
+push static 1
+push constant 1
+add
+pop local 2					//local[2] = ayc (indirizzo yc)
+//calcola nuovo elemento come testa+direzione
+	push static 2
+	call Memory.peek 1		//xt (testa)
+	push static 3
+	add
+	pop local 0				//local[0] = new_x
+	push static 2
+	push constant 1
+	add
+	call Memory.peek 1		//yt
+	push static 4
+	add
+	pop local 1				//local[1] = new_y
+//if(chek_collision) game_over
+	push local 0
+	push local 1
+	call Level.checkCollision 2
+	if-goto END
+//salva direzione in direzione corrente
+	push static 3			//dx
+	pop static 6			//dxc
+	push static 4			//dy
+	pop static 7			//dyc
+//disegna testa
+	push constant 1
+	push local 0
+	push local 1
+	push constant 1
+	call Level.colorSquare 4
+	pop temp 0
+//if(!mangiato) add_array
+	push static 8
+	pop local 3				//local[3]=se mangiato prima
+	push local 0
+	push local 1
+	call Level.checkFruit 2
+	pop static 8			//e=mangiato ora
+	push local 3
+	push constant 0
+	eq
+	if-goto NO_ADD
+//else allunga array
+	//se add: testa=new_testa, coda=coda
+	push static 2
+	pop local 4				//local[4]=t_tmp
+	push static 5
+	push constant 3
+	call Math.multiply 2	//n*3
+	push static 0
+	add						//array+n*3
+	pop static 2			//t=new_t
+	push local 4
+	push constant 2
+	add						//s[t_tmp][next]
+	push static 2
+	call Memory.poke 2		//next[t_tmp]=t
+	pop temp 0
+	//aggiorna ayc per nuova testa
+	push static 2
+	push constant 1
+	add
+	pop local 2				//ayc=t[1]
+	//n++
+	push static 5
+	push constant 1
+	add
+	pop static 5			//n++
+	//score
+	call Main.setNewScore 0
+	pop temp 0
+	push static 5
+	push constant 2
+	sub
+	call Hud.setScore 1		//newScore = n-2
+	pop temp 0
+	goto ADD_HEAD
+label NO_ADD
+//cancella coda
+	push constant 0			//colore bianco
+	push static 1
+	call Memory.peek 1		//xc (coda)
+	push local 2
+	call Memory.peek 1		//yc
+	push constant 1
+	call Level.colorSquare 4
+	pop temp 0
+	//se no_add: testa=coda, coda=next(coda)
+	push static 2
+	push constant 2
+	add
+	push static 1
+	call Memory.poke 2		//next(t)=c
+	pop temp 0
+	push static 1
+	pop static 2			//t=c
+	push static 1
+	push constant 2
+	add
+	call Memory.peek 1		//next(c)
+	pop static 1			//c=next(c)
+label ADD_HEAD
+//aggiungi nuovo elemento (in posizione coda se no_add, else in nuova posizione)
+	push local 2
+	push constant 1
+	sub
+	push local 0
+	call Memory.poke 2		//s[ayc-1]=new_x
+	pop temp 0
+	push local 2
+	push local 1
+	call Memory.poke 2		//s[ayc]=new_y
+	pop temp 0
+	push local 2
+	push constant 1
+	add
+	push constant 0
+	call Memory.poke 2		//s[ayc+1]=0 (next=0)
+	pop temp 0
+label END
+	push constant 0
+return
+
+
+
+//// GET/SET/RESET ////
+
+function Snake.getScore 0
+	push static 5
+return
+
+function Snake.setXdirection 0
+	//if(new_dx==-dxc) end
+	push argument 0
+	push static 6
+	neg
+	eq
+	if-goto END
+	//else dx=new_dx
+	push argument 0
+	pop static 3		//dx=arg
+	push constant 0
+	pop static 4		//dy=0
+label END
+	push constant 0
+return
+
+function Snake.setYdirection 0
+	//if(new_dy==-dyc) end
+	push argument 0
+	push static 7
+	neg
+	eq
+	if-goto END
+	//else dy=new_dy
+	push argument 0
+	pop static 4		//dy=arg
+	push constant 0
+	pop static 3		//dx=0
+label END
+	push constant 0
+return
+
+
+function Snake.reset 0
+	//reset static
+	push constant 1
+	pop static 3			//dx=1
+	push constant 0
+	pop static 4			//dy=0
+	push constant 2
+	pop static 5			//n=2
+	push constant 1
+	pop static 6			//dxc=1
+	push constant 0
+	pop static 7			//dyc=0
+	push constant 0
+	pop static 8			//e=false
+	//azzera array
+	push static 0			//s
+	call Level.getDH 0
+	call Level.getDV 0
+	push constant 3
+	call Math.multiply 2	//3*dv
+	call Math.multiply 2	//length=dh*dv*3
+	call Level.zeroArray 2
+	pop temp 0
+	//riempi array, t e c
+	call Snake.initSquares 0
+return
+
+
+//// PRIVATE ////
+
+//LOCAL: 0=length(array)
+function Snake.arrayInit 1
+	call Level.getDH 0
+	call Level.getDV 0
+	push constant 3
+	call Math.multiply 2	//3*dv
+	call Math.multiply 2	//dimensioni=dh*dv*3
+	pop local 0				//local[0]=length
+	push local 0
+	call Array.new 1
+	pop static 0
+	//azzera
+	push static 0
+	push local 0
+	call Level.zeroArray 2
+return
+
+
+function Snake.initSquares 0
+//inizializza testa e coda
+	push static 0
+	pop static 1		//c=s
+	push static 1
+	push constant 3
+	add
+	pop static 2		//t=c+3
+//inizializza 2 celle
+	push static 1
+	push constant 8
+	call Memory.poke 2	//x0 (coda)
+	pop temp 0
+	push static 1
+	push constant 1
+	add
+	push constant 7
+	call Memory.poke 2	//y0 (coda)
+	pop temp 0
+	push static 1
+	push constant 2
+	add
+	push static 2
+	call Memory.poke 2	//next0 (coda)
+	pop temp 0
+	push static 2
+ 	push constant 9
+	call Memory.poke 2	//x1 (testa)
+	pop temp 0
+	push static 2
+	push constant 1
+	add
+	push constant 7
+	call Memory.poke 2	//y1 (testa)
+	pop temp 0
+	push static 2
+	push constant 2
+	add
+	push constant 0
+	call Memory.poke 2	//next1 (testa)
+	pop temp 0
+//disegna 2 celle
+	push constant 1
+	push constant 8
+	push constant 7
+	push constant 1
+	call Level.colorSquare 4
+	pop temp 0
+	push constant 1
+	push constant 9
+	push constant 7
+	push constant 1
+	call Level.colorSquare 4
+return
+

@@ -1,0 +1,40 @@
+//REQ.: And4,and8vs1sep,bin2dec3,mux8,not,register,mux8way16,(and,and3,and16,mux,mux16,or,or8way16)
+
+// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/03/a/RAM8.hdl
+
+/**
+ * Memory of 8 registers, each 16 bit-wide. Out holds the value
+ * stored at the memory location specified by address. If load==1, then 
+ * the in value is loaded into the memory location specified by address 
+ * (the loaded value will be emitted to out from the next time step onward).
+ */
+
+CHIP RAM8 {
+    IN in[16], load, address[3];
+    OUT out[16];
+
+    PARTS:
+    
+    //== DMUX
+    //ADDRESS from binary to decimal
+    Bin2Dec3(in=address, out=addressDec);
+    //addressDec AND load
+    And8vs1sep(a=addressDec, b=load, out0=ram0, out1=ram1, out2=ram2, out3=ram3, out4=ram4, out5=ram5, out6=ram6, out7=ram7);
+
+    //IN:
+    Register(in=in, load=ram0, out=regZero);
+    Register(in=in, load=ram1, out=regOne);
+    Register(in=in, load=ram2, out=regTwo);
+    Register(in=in, load=ram3, out=regThree);
+    Register(in=in, load=ram4, out=regFour);
+    Register(in=in, load=ram5, out=regFive);
+    Register(in=in, load=ram6, out=regSix);
+    Register(in=in, load=ram7, out=regSeven);
+
+    //OUT: Mux between 8 registers
+    Mux8Way16(a=regZero, b=regOne, c=regTwo, d=regThree, e=regFour, f=regFive, g=regSix, h=regSeven, sel=address, out=out);
+
+}

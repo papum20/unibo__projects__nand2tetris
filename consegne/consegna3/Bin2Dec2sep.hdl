@@ -1,0 +1,22 @@
+//REQ.: And,not
+
+CHIP Bin2Dec2sep {
+    IN in[2];
+    OUT out0, out1, out2, out3;
+
+
+    PARTS:   
+
+
+    //NOT in
+    Not(in=in[0], out=notZero);
+    Not(in=in[1], out=notOne);
+
+   //AND sel
+    And(a=notZero, b=notOne, out=out0);
+    And(a=in[0],   b=notOne, out=out1);
+    And(a=notZero, b=in[1],  out=out2);
+    And(a=in[0],   b=in[1],  out=out3);
+
+
+}

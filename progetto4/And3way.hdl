@@ -1,0 +1,14 @@
+//REQ.: and
+
+
+CHIP And3way {
+    IN a, b, c;
+    OUT out;
+
+    PARTS:
+    
+    And(a=a, b=b, out=ANDab);
+    And(a=ANDab, b=c, out=out);
+
+
+}

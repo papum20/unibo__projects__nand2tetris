@@ -1,0 +1,228 @@
+//// COMANDI ////
+//Spazio: salta (1 solo salto, non si può tenere premuto)
+//P: pausa/riprendi
+//R: ricomincia
+//S (quando il gioco è fermo per pausa o game over): cambia seed per random (inserire un numero e premere invio)
+
+//Il gioco è pensato per il VMEmulator alla massima velocità; si può giocare a velocità minore o tradotto sul
+//CPUEmulator ma conviene cambiare alcuni parametri (lmin, dhmin, dhmax, vs in Level, v_max e g in Bird) con quelli indicati a fianco,
+//e comunque è più lento e i comandi meno responsivi 
+
+
+
+
+
+call Sys.init 0
+
+
+//STATIC: 0=running(1=in funzione, 0=in pausa), 1=seed (per random), 2=newScore, 3=game over (1=true)
+
+//setup e chiamata di Update
+function Main.main 0
+
+	push constant 1
+	pop static 0		//running(1=in funzione, 0=in pausa)
+	push constant 3
+	pop static 1		//Random seed
+	push constant 1
+	pop static 2		//newScore (1 quando lo score è aggiornato)
+	push constant 0
+	pop static 3		//game over = 0 (false)
+
+	call Hud.init 0
+	pop temp 0
+	call Bird.init 0
+	pop temp 0
+	call Level.init 0
+	pop temp 0
+	call Random.init 0
+	pop temp 0
+
+	push static 1
+	call Random.setSeed 1
+	pop temp 0
+
+	call Main.Update 0
+
+return
+
+
+
+//funzione con un loop che si ripete finché il gioco funziona
+function Main.Update 0
+
+label UPDATE
+	//if(pause) skip
+	push static 0
+	push constant 0
+	eq
+	if-goto SKIP_UPDATE
+
+	//call Bird.setSpeed 0
+	//pop temp 0
+	push constant 0
+	call Bird.draw 1		//cancella uccello
+	pop temp 0
+	call Bird.setSpeed 0	//aggiorna velocità
+	pop temp 0
+	call Bird.movement 0	//muovi uccello
+	pop temp 0
+	push constant 1
+	call Bird.draw 1		//ridisegna uccello
+	pop temp 0
+	call Level.iterator 0	//cancella ostacoli
+	pop temp 0
+	call Level.check 0		//aggiungi eventuali ostacoli
+	pop temp 0
+
+	//HUD
+	call Hud.drawSpeed 0
+	pop temp 0
+	//if(newScore==0) skip
+	push static 2
+	push constant 0
+	eq
+	if-goto SKIP_UPDATE
+	//else drawScore
+	call Hud.drawScore 0
+	pop static 2			//newScore = 0
+
+label SKIP_UPDATE
+	call Main.getInput 0
+	pop temp 0
+	//aspetta (framerate = 30fps -> 1s/30=33ms)
+	//push constant 33
+	//call Sys.wait 1
+	//pop temp 0
+
+goto UPDATE
+
+	push constant 0
+return
+
+
+
+
+
+function Main.GameOver 0
+	push constant 0
+	pop static 0
+	push constant 1
+	pop static 3
+	call Hud.writeGameOver 0
+return
+
+
+//spazio(32):salta, R(82):reset, P(80):pausa/riprendi
+function Main.getInput 1
+//controllo input
+	call Keyboard.keyPressed 0
+	pop local 0				//local[0] = keyPressed
+	push local 0
+	push constant 32
+	eq
+	if-goto SPACE
+	push local 0
+	push constant 82
+	eq
+	if-goto R
+	push local 0
+	push constant 80
+	eq
+	if-goto P
+	push local 0
+	push constant 83
+	eq
+	if-goto S
+	goto END
+label SPACE
+	call Bird.setInput 0
+	pop temp 0
+	goto END
+label R
+	call Main.restart 0
+	pop temp 0
+	push constant 0
+	pop static 3			//game over = false
+	goto END
+label S
+	push static 0
+	if-goto END				//if(!paused) end
+	call Hud.Seed 0
+	pop temp 0
+	goto END
+label P
+	call Hud.writePause 0
+	pop temp 0
+	//wait
+	push constant 500
+	call Sys.wait 1
+	pop temp 0
+	//if(game over) end
+	push static 3
+	push constant 1
+	eq
+	if-goto END
+	//else running=!running
+	push constant 1
+	push static 0
+	sub
+	pop static 0			//running=1-running=!running
+label END
+	push constant 0
+return
+
+
+function Main.restart 0
+	push static 0
+	push constant 1
+	eq
+	if-goto RESETS
+//if(paused) cancella PAUSE
+	call Hud.writePause 0
+	pop temp 0
+	push constant 1
+	pop static 0			//running=true
+label RESETS
+	call Hud.clearScene 0	//cancella schermo
+	pop temp 0
+	call Hud.resetScore 0	//score=0
+	pop temp 0
+	call Level.arrayReset 0	//resetta/azzera array
+	pop temp 0
+	call Level.resetO 0		//ostacoli=0
+	pop temp 0
+	call Bird.reset 0		//resetta parametri uccello
+	pop temp 0
+	push constant 2000
+	call Sys.wait 1			//aspetta circa 2 secondi
+return
+
+
+
+//// SET COLOR ////
+
+function Main.setColorWhite 0
+	push constant 0
+	call Screen.setColor 1
+return
+
+function Main.setColorBlack 0
+	push constant 1
+	neg
+	call Screen.setColor 1
+return
+
+
+
+//// SET/GET ////
+
+function Main.getState 0
+	push static 0
+return
+
+function Main.setNewScore 0
+	push constant 1
+	pop static 2
+	push constant 0
+return

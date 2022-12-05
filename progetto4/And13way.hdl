@@ -1,0 +1,25 @@
+//REQ.: and, (not)
+
+
+CHIP And13way {
+    IN in[13];
+    OUT out;
+
+    PARTS:
+    And(a=in[0], b=in[1], out=and1);
+    And(a=and1, b=in[2], out=and2);
+    And(a=and2, b=in[3], out=and3);
+    And(a=and3, b=in[4], out=and4);
+    And(a=and4, b=in[5], out=and5);
+    And(a=and5, b=in[6], out=and6);
+    And(a=and6, b=in[7], out=and7);
+    And(a=and7, b=in[8], out=and8);
+    And(a=and8, b=in[9], out=and9);
+    And(a=and9, b=in[10], out=and10);
+    And(a=and10, b=in[11], out=and11);
+    And(a=and11, b=in[12], out=out);
+    
+    
+        
+
+}
